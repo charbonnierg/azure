@@ -1,4 +1,4 @@
-module github.com/libdns/azure
+module github.com/charbonnierg/azure
 
 go 1.19
 

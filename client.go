@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
@@ -24,11 +25,23 @@ type Client struct {
 // setupClient invokes authentication and store client to the provider instance.
 func (p *Provider) setupClient() error {
 	if p.client.azureClient == nil {
-		clientCredential, err := azidentity.NewClientSecretCredential(p.TenantId, p.ClientId, p.ClientSecret, nil)
-		if err != nil {
-			return err
+		var credentials azcore.TokenCredential
+		if p.ClientId == "" && p.ClientSecret == "" {
+			creds, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
+				TenantID: p.TenantId,
+			})
+			if err != nil {
+				return err
+			}
+			credentials = creds
+		} else {
+			creds, err := azidentity.NewClientSecretCredential(p.TenantId, p.ClientId, p.ClientSecret, nil)
+			if err != nil {
+				return err
+			}
+			credentials = creds
 		}
-		clientFactory, err := armdns.NewClientFactory(p.SubscriptionId, clientCredential, nil)
+		clientFactory, err := armdns.NewClientFactory(p.SubscriptionId, credentials, nil)
 		if err != nil {
 			return err
 		}
